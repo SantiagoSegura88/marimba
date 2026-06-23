@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Chivos</title>
+<meta name="description" content="Gestión de repertorio para grupos de marimba">
+<meta name="theme-color" content="#0f0f11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chivos">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root {
+    /* Color ramps — unchanged */
+    --purple-50: #EEEDFE; --purple-100: #CECBF6; --purple-200: #AFA9EC;
+    --purple-400: #7F77DD; --purple-600: #534AB7; --purple-800: #3C3489; --purple-900: #26215C;
+    --teal-50: #E1F5EE; --teal-100: #9FE1CB; --teal-400: #1D9E75; --teal-600: #0F6E56; --teal-800: #085041;
+    --coral-50: #FAECE7; --coral-400: #D85A30; --coral-800: #712B13;
+    --amber-50: #FAEEDA; --amber-100: #FAC775; --amber-400: #BA7517; --amber-800: #633806;
+    --green-50: #EAF3DE; --green-400: #639922; --green-800: #27500A;
+    --blue-50: #E6F1FB; --blue-100: #B5D4F4; --blue-400: #378ADD; --blue-800: #0C447C;
+    --pink-50: #FBEAF0; --pink-100: #F4C0D1; --pink-800: #72243E;
+    --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-400: #888780; --gray-600: #5F5E5A;
+
+    /* Dark theme semantic tokens */
+    --bg: #0f0f11;
+    --surface: #1a1a1f;
+    --surface2: #222228;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #eeeef0;
+    --text2: #a0a0aa;
+    --text3: #606068;
+    --radius: 10px; --radius-sm: 6px; --radius-lg: 14px;
+
+    /* Dark genre card fills */
+    --gc-cumbia-bg: #062b1e; --gc-cumbia-border: #0f5c3a; --gc-cumbia-label: #5DCAA5; --gc-cumbia-count: #9FE1CB;
+    --gc-merengue-bg: #16143a; --gc-merengue-border: #2d2870; --gc-merengue-label: #7F77DD; --gc-merengue-count: #CECBF6;
+    --gc-corrido-bg: #291a05; --gc-corrido-border: #5a3a0a; --gc-corrido-label: #EF9F27; --gc-corrido-count: #FAC775;
+    --gc-bolero-bg: #2a0a18; --gc-bolero-border: #5c1a35; --gc-bolero-label: #D4537E; --gc-bolero-count: #F4C0D1;
+    --gc-pasodoble-bg: #061828; --gc-pasodoble-border: #0c3560; --gc-pasodoble-label: #378ADD; --gc-pasodoble-count: #B5D4F4;
+    --gc-otro-bg: #1a1a1a; --gc-otro-border: #333; --gc-otro-label: #888780; --gc-otro-count: #aaa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  
+  /* Layout — mobile first */
+  .app { display: flex; flex-direction: column; min-height: 100vh; touch-action: pan-y; }
+  .sidebar { display: none; }
+  .main { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 72px; }
+
+  /* Top bar */
+  .topbar { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-logo { font-size: 16px; font-weight: 700; color: #EEEDFE; display: flex; align-items: center; gap: 8px; }
+  .topbar-logo i { font-size: 20px; color: #AFA9EC; }
+  .topbar-sub { font-size: 11px; color: var(--text3); }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 0.5px solid var(--border); display: flex; z-index: 50; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 10px; border: none; background: none; color: var(--text3); font-size: 10px; font-weight: 500; cursor: pointer; transition: color 0.15s; letter-spacing: 0.02em; }
+  .nav-btn svg { width: 24px; height: 24px; flex-shrink: 0; transition: color 0.15s; }
+  .nav-btn i { font-size: 20px; }
+  .nav-btn.active { color: #AFA9EC; }
+  .nav-btn.active svg, .nav-btn.active i { color: #AFA9EC; }
+
+  /* Page header */
+  .page-header { padding: 20px 16px 0; }
+  .page-title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .page-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .page-content { padding: 14px 16px 20px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); }
+  .card-header { padding: 14px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 14px; font-weight: 500; }
+  .card-body { padding: 16px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: #7F77DD; color: #fff; }
+  .btn-primary:hover { background: #AFA9EC; color: #16143a; }
+  .btn-secondary { background: var(--surface); border: 0.5px solid var(--border2); color: var(--text2); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-danger { background: #FEE2E2; color: #991B1B; }
+  .btn-danger:hover { background: #FECACA; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-icon { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 4px 6px; border-radius: 4px; display: inline-flex; align-items: center; }
+  .btn-icon:hover { color: var(--text); background: var(--bg); }
+
+  /* Badges — dark mode glows */
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .badge-cumbia { background: #062b1e; color: #5DCAA5; border: 0.5px solid #0f5c3a; }
+  .badge-merengue { background: #16143a; color: #AFA9EC; border: 0.5px solid #2d2870; }
+  .badge-corrido { background: #291a05; color: #EF9F27; border: 0.5px solid #5a3a0a; }
+  .badge-bolero { background: #2a0a18; color: #ED93B1; border: 0.5px solid #5c1a35; }
+  .badge-pasodoble { background: #061828; color: #85B7EB; border: 0.5px solid #0c3560; }
+  .badge-otro { background: #1a1a1a; color: #888780; border: 0.5px solid #333; }
+
+  /* Forms */
+  input, select, textarea { font-family: inherit; font-size: 13px; }
+  .input { width: 100%; padding: 8px 11px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; }
+  .input:focus { border-color: #7F77DD; box-shadow: 0 0 0 3px rgba(127,119,221,0.2); }
+  .select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888780' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { font-size: 11px; font-weight: 500; color: var(--text3); text-align: left; padding: 0 12px 10px; border-bottom: 0.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+  tbody td { padding: 11px 12px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+
+  /* Pills filter */
+  .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill { padding: 5px 13px; border-radius: 20px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text2); font-size: 12px; cursor: pointer; font-weight: 400; transition: all 0.15s; white-space: nowrap; }
+  .pill:hover { background: var(--bg); }
+  .pill.active { background: #7F77DD; color: white; border-color: #7F77DD; font-weight: 500; }
+
+  /* Genre button cards */
+  .genero-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .genero-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 80px; justify-content: space-between; }
+  .genero-card:active { transform: scale(0.97); }
+  .genero-card.active { border-color: transparent; }
+  .genero-card-label { font-size: 12px; color: var(--text3); font-weight: 500; }
+  .genero-card-count { font-size: 28px; font-weight: 700; line-height: 1; }
+  .genero-card-todos { grid-column: span 2; flex-direction: row; align-items: center; min-height: 56px; padding: 12px 16px; }
+  .genero-card-todos .genero-card-count { font-size: 22px; }
+
+  /* Genre colors — dark */
+  .gc-cumbia { background: var(--gc-cumbia-bg); border-color: var(--gc-cumbia-border); }
+  .gc-cumbia .genero-card-label { color: var(--gc-cumbia-label); }
+  .gc-cumbia .genero-card-count { color: var(--gc-cumbia-count); }
+  .gc-cumbia.active { background: #0f5c3a; border-color: #1D9E75; }
+  .gc-cumbia.active .genero-card-label, .gc-cumbia.active .genero-card-count { color: #E1F5EE; }
+
+  .gc-merengue { background: var(--gc-merengue-bg); border-color: var(--gc-merengue-border); }
+  .gc-merengue .genero-card-label { color: var(--gc-merengue-label); }
+  .gc-merengue .genero-card-count { color: var(--gc-merengue-count); }
+  .gc-merengue.active { background: #2d2870; border-color: #7F77DD; }
+  .gc-merengue.active .genero-card-label, .gc-merengue.active .genero-card-count { color: #EEEDFE; }
+
+  .gc-corrido { background: var(--gc-corrido-bg); border-color: var(--gc-corrido-border); }
+  .gc-corrido .genero-card-label { color: var(--gc-corrido-label); }
+  .gc-corrido .genero-card-count { color: var(--gc-corrido-count); }
+  .gc-corrido.active { background: #5a3a0a; border-color: #EF9F27; }
+  .gc-corrido.active .genero-card-label, .gc-corrido.active .genero-card-count { color: #FAEEDA; }
+
+  .gc-bolero { background: var(--gc-bolero-bg); border-color: var(--gc-bolero-border); }
+  .gc-bolero .genero-card-label { color: var(--gc-bolero-label); }
+  .gc-bolero .genero-card-count { color: var(--gc-bolero-count); }
+  .gc-bolero.active { background: #5c1a35; border-color: #D4537E; }
+  .gc-bolero.active .genero-card-label, .gc-bolero.active .genero-card-count { color: #FBEAF0; }
+
+  .gc-pasodoble { background: var(--gc-pasodoble-bg); border-color: var(--gc-pasodoble-border); }
+  .gc-pasodoble .genero-card-label { color: var(--gc-pasodoble-label); }
+  .gc-pasodoble .genero-card-count { color: var(--gc-pasodoble-count); }
+  .gc-pasodoble.active { background: #0c3560; border-color: #378ADD; }
+  .gc-pasodoble.active .genero-card-label, .gc-pasodoble.active .genero-card-count { color: #E6F1FB; }
+
+  .gc-otro { background: var(--gc-otro-bg); border-color: var(--gc-otro-border); }
+  .gc-otro .genero-card-label { color: var(--gc-otro-label); }
+  .gc-otro .genero-card-count { color: var(--gc-otro-count); }
+  .gc-otro.active { background: #333; border-color: #888; }
+  .gc-otro.active .genero-card-label, .gc-otro.active .genero-card-count { color: #eee; }
+
+  .gc-todos { background: var(--surface2); border-color: var(--border2); }
+  .gc-todos .genero-card-label { color: var(--text3); }
+  .gc-todos .genero-card-count { color: var(--text); }
+  .gc-todos.active { background: #7F77DD; border-color: #7F77DD; }
+  .gc-todos.active .genero-card-label, .gc-todos.active .genero-card-count { color: #fff; }
+
+  .gc-agregar { background: var(--surface2); border-color: var(--border2); border-style: dashed; }
+  .gc-agregar .genero-card-label { color: var(--text3); }
+  .gc-agregar .genero-card-count { color: var(--text3); font-weight: 300; }
+  .gc-agregar:hover { border-color: #7F77DD; background: #16143a; }
+  .gc-agregar:hover .genero-card-label, .gc-agregar:hover .genero-card-count { color: #AFA9EC; }
+
+  /* Set cards */
+  .set-list { display: flex; flex-direction: column; gap: 8px; }
+  .set-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 13px 15px; cursor: pointer; transition: border-color 0.15s; }
+  .set-card:hover { border-color: var(--purple-200); }
+  .set-card.selected { border: 1.5px solid #7F77DD; background: #16143a; }
+  .set-card-name { font-size: 13px; font-weight: 500; }
+  .set-card-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .set-card-badges { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
+  .set-card-check { width: 18px; height: 18px; border-radius: 4px; border: 0.5px solid var(--border2); background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white; }
+  .set-card-check.checked { background: var(--purple-600); border-color: var(--purple-600); }
+
+  /* Song rows */
+  .song-row-editor { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .song-row-editor:last-child { border-bottom: none; }
+  .drag-handle { color: var(--text3); cursor: grab; font-size: 15px; flex-shrink: 0; }
+  .song-num-sm { font-size: 11px; color: var(--text3); width: 20px; text-align: right; flex-shrink: 0; }
+  .song-info { flex: 1; min-width: 0; }
+  .song-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .song-artist { font-size: 11px; color: var(--text3); }
+
+  /* Modals */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal { background: var(--surface); border-radius: var(--radius-lg); width: 100%; max-width: 460px; max-height: 80vh; overflow-y: auto; }
+  .modal-header { padding: 16px 18px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 15px; font-weight: 500; }
+  .modal-body { padding: 18px; }
+  .modal-footer { padding: 14px 18px; border-top: 0.5px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Drag-over highlight */
+  .drag-over { background: #16143a; border-radius: var(--radius-sm); }
+
+  /* QR placeholder */
+  .qr-box { width: 120px; height: 120px; border: 2px dashed var(--border2); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 11px; text-align: center; }
+
+  /* Musician view */
+  .musician-page { max-width: 500px; margin: 0 auto; padding: 16px; }
+  .musician-header { background: linear-gradient(135deg, #16143a 0%, #26215C 100%); border: 0.5px solid #2d2870; color: white; border-radius: var(--radius-lg); padding: 20px; margin-bottom: 14px; text-align: center; }
+  .musician-event-title { font-size: 20px; font-weight: 700; color: #EEEDFE; }
+  .musician-event-sub { font-size: 12px; color: #AFA9EC; margin-top: 5px; }
+  .musician-set-block { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+  .musician-set-header { background: var(--bg); padding: 9px 14px; border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .musician-set-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .musician-song-row { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-bottom: 0.5px solid var(--border); }
+  .musician-song-row:last-child { border-bottom: none; }
+  .musician-num { font-size: 11px; color: var(--text3); width: 18px; text-align: right; flex-shrink: 0; }
+  .musician-song-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .musician-artist { font-size: 10px; color: var(--text3); }
+
+  /* Repertoire block */
+  .rep-block { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
+  .rep-block-header { padding: 10px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 0.5px solid var(--border); }
+  .rep-block-songs { padding: 4px 0; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: white; padding: 10px 16px; border-radius: var(--radius-sm); font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* Dashed add button */
+  .add-dashed { width: 100%; padding: 10px; border: 1px dashed var(--border2); border-radius: var(--radius-sm); background: none; color: var(--text3); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s; }
+  .add-dashed:hover { background: var(--bg); color: var(--text2); }
+
+  /* Tabs (for event view) */
+  .tabs { display: flex; gap: 2px; margin-bottom: 16px; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; border: 0.5px solid var(--border); width: fit-content; }
+  .tab { padding: 6px 14px; border-radius: 5px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text2); }
+  .tab.active { background: var(--surface); color: var(--text); }
+
+  /* Search */
+  .search-wrap { position: relative; }
+  .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 16px; pointer-events: none; }
+  .search-wrap .input { padding-left: 32px; }
+
+  /* Action bar */
+  .action-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .action-bar .btn { flex: 1; justify-content: center; }
+
+  /* Two-col layout — stacked on mobile */
+  .two-col { display: grid; grid-template-columns: 1fr; gap: 14px; max-width: 100%; }
+  .two-col-eq { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+  @media (min-width: 768px) {
+    .app { flex-direction: row; }
+    .sidebar { display: flex; width: 220px; background: var(--surface); border-right: 0.5px solid var(--border); flex-direction: column; flex-shrink: 0; }
+    .main { padding-bottom: 0; }
+    .topbar { display: none; }
+    .bottom-nav { display: none; }
+    .two-col { grid-template-columns: 280px 1fr; }
+    .two-col-eq { grid-template-columns: 1fr 1fr; }
+    .page-header { padding: 24px 28px 0; }
+    .page-content { padding: 20px 28px 40px; }
+    .page-title { font-size: 20px; }
+    .genero-grid { grid-template-columns: repeat(4, 1fr); }
+    .genero-card-todos { grid-column: span 4; }
+    .sidebar-logo { padding: 20px 18px 16px; border-bottom: 0.5px solid var(--border); }
+    .sidebar-logo-name { font-size: 15px; font-weight: 700; color: #EEEDFE; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo-name i { font-size: 20px; color: #AFA9EC; }
+    .sidebar-logo-sub { font-size: 11px; color: var(--text3); margin-top: 2px; padding-left: 28px; }
+    .sidebar-nav { padding: 10px; flex: 1; }
+    .sidebar-nav .nav-btn { flex-direction: row; font-size: 13px; padding: 9px 12px; gap: 10px; font-weight: 400; color: var(--text2); }
+    .sidebar-nav .nav-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .sidebar-nav .nav-btn i { font-size: 17px; }
+    .sidebar-nav .nav-btn.active { background: #16143a; color: #CECBF6; font-weight: 500; }
+    .sidebar-bottom { padding: 12px 10px; border-top: 0.5px solid var(--border); }
+    .sidebar-stat { font-size: 11px; color: var(--text3); padding: 4px 12px; }
+    .sidebar-stat b { color: var(--text2); }
+  }
+
+  /* Print styles */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .sidebar, .bottom-nav, .action-bar, .btn-agregar-set-final, .btn-descanso-entre, .btn-remove-set-from-ev, .drag-handle, .rep-block-header .btn-icon, .card-header { display: none !important; }
+    .main, body, html { overflow: visible !important; background: white !important; }
+    #print-repertorio { display: block !important; }
+    #app-content { display: none !important; }
+  }
+
+  /* Signo badge */
+  .signo-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 20px; padding: 0 4px; border-radius: 5px; font-size: 11px; font-weight: 700; background: #1e1a38; color: #AFA9EC; border: 0.5px solid #2d2870; letter-spacing: 0.02em; flex-shrink: 0; font-family: 'Georgia', serif; }
+  .signo-nd { background: var(--surface2); color: var(--text3); border-color: var(--border2); font-family: inherit; font-weight: 500; font-size: 11px; }
+
+  /* Note picker in modal */
+  .nota-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 10px; }
+  .nota-btn { padding: 10px 0; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text2); font-size: 15px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s; font-family: 'Georgia', serif; }
+  .nota-btn:hover { border-color: #7F77DD; color: #AFA9EC; }
+  .nota-btn.selected { background: #16143a; border-color: #7F77DD; color: #CECBF6; }
+
+  .mod-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .mod-btn { padding: 8px 4px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .mod-btn:hover { border-color: #7F77DD; color: #AFA9EC; }
+  .mod-btn.selected { background: #16143a; border-color: #7F77DD; color: #CECBF6; }
+  .mod-btn .mod-sym { font-size: 16px; display: block; margin-bottom: 2px; font-family: 'Georgia', serif; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+  .empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+  .empty-title { font-size: 14px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+
+  /* Descanso block */
+  .descanso-block { display: flex; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: 8px; border-left: 2px solid var(--border2); background: transparent; color: var(--text3); font-size: 11px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* Between-sets buttons */
+  .btn-descanso-entre { width: 100%; padding: 9px 14px; margin: 6px 0; border: 1px dashed var(--border2); border-radius: var(--radius-sm); background: none; color: var(--text3); font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
+  .btn-descanso-entre:hover { border-color: #5a3a0a; color: #EF9F27; background: #291a05; }
+  .btn-agregar-set-final { width: 100%; padding: 11px 14px; margin-top: 6px; border: 1px dashed var(--border2); border-radius: var(--radius-sm); background: none; color: var(--text3); font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
+  .btn-agregar-set-final:hover { border-color: #7F77DD; color: #AFA9EC; background: #16143a; }
+
+  /* Install PWA button */
+  .btn-instalar { width: 100%; padding: 12px 16px; background: #534AB7; border: none; border-radius: var(--radius); color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; }
+  .btn-instalar i { font-size: 18px; }
+  .btn-instalar:active { opacity: 0.85; transform: scale(0.98); }
+
+  /* Access button */
+  .btn-acceso { width: 100%; padding: 14px; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius); color: var(--text3); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; margin-top: 4px; }
+  .btn-acceso:hover { border-color: #7F77DD; color: #AFA9EC; background: #16143a; }
+
+  /* Password overlay */
+  .pwd-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+  .pwd-box { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 28px 24px; width: 100%; max-width: 300px; text-align: center; }
+  .pwd-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .pwd-sub { font-size: 12px; color: var(--text3); margin-bottom: 20px; }
+  .pwd-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
+  .pwd-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--border2); transition: background 0.15s; }
+  .pwd-dot.filled { background: #7F77DD; }
+  .pwd-numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .pwd-key { padding: 16px 0; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); font-size: 20px; font-weight: 500; cursor: pointer; color: var(--text); transition: all 0.1s; }
+  .pwd-key:active { background: #16143a; border-color: #7F77DD; transform: scale(0.94); }
+  .pwd-key.del { font-size: 16px; color: var(--text3); }
+  .pwd-error { font-size: 12px; color: #E24B4A; min-height: 16px; margin-bottom: 8px; }
+  .pwd-cancel { margin-top: 4px; font-size: 12px; color: var(--text3); cursor: pointer; background: none; border: none; width: 100%; padding: 6px; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const GENEROS = ['Cumbia','Merengue','Corrido','Bolero','Pasodoble','Otro'];
+const NOTAS = ['C','D','E','F','G','A','B'];
+const MODIFICADORES = [
+  { val: '', label: 'Mayor', sym: '' },
+  { val: 'm', label: 'menor', sym: 'm' },
+  { val: 'b', label: 'bemol', sym: '♭' },
+  { val: '#', label: 'sostenido', sym: '♯' },
+];
+const GENRE_KEY = g => g.toLowerCase().replace(/é/g,'e').replace(/ó/g,'o');
+
+const CANCIONES_INICIAL = [
+  {id:1,nombre:'El Manicero',artista:'Fito Olivares Y La Pura Sabrosura',genero:'Cumbia'},
+  {id:2,nombre:'El Colesterol',artista:'Fito Olivares Y La Pura Sabrosura',genero:'Cumbia'},
+  {id:3,nombre:'Si Una Vez',artista:'Selena',genero:'Cumbia'},
+  {id:4,nombre:'Felicidad',artista:'Los Socios Del Ritmo',genero:'Merengue'},
+  {id:5,nombre:'El Listón De Tu Pelo',artista:'Los Ángeles Azules',genero:'Cumbia'},
+  {id:6,nombre:'Amor Prohibido',artista:'Selena',genero:'Bolero'},
+  {id:7,nombre:'Tiene Espinas El Rosal',artista:'Grupo Cañaveral De Humberto Pabón',genero:'Corrido'},
+  {id:8,nombre:'La Gallina',artista:'Fito Olivares Y La Pura Sabrosura',genero:'Cumbia'},
+  {id:9,nombre:'El Viejo del Sombrerón',artista:'La Sonora Dinamita',genero:'Pasodoble'},
+  {id:10,nombre:'Magdalena Magdalena',artista:'Rigo Dominguez Y Su Grupo América',genero:'Cumbia'},
+  {id:11,nombre:'Cartageneña',artista:'Marimba Orquesta Los Golondrinos',genero:'Cumbia'},
+  {id:12,nombre:'El Sobaqueado',artista:'Marimba Orquesta Los Golobirnos',genero:'Cumbia'},
+  {id:13,nombre:'Muchacha Cartagenera',artista:'Marimba Orquesta Los Golondrinos',genero:'Cumbia'},
+  {id:14,nombre:'Motivos',artista:'Dimensión Costeña Guanacaste',genero:'Cumbia'},
+  {id:15,nombre:'Que Nadie Sepa Mi Sufrir',artista:'Sonora Siguaray',genero:'Bolero'},
+  {id:16,nombre:'Cumbia Del Popo',artista:'Simba Musical',genero:'Cumbia'},
+  {id:17,nombre:'Cumbia De La Cobra',artista:'Fito Olivares Y La Pura Sabrosura',genero:'Cumbia'},
+  {id:18,nombre:'Se Me Perdió la Cadenita',artista:'La Sonora Dinamita, Lucho Pérez',genero:'Cumbia'},
+  {id:19,nombre:'Mi Cucu',artista:'La Sonora Dinamita, Lucho Argain',genero:'Cumbia'},
+  {id:20,nombre:'Capullo y Sorullo',artista:'La Sonora Dinamita',genero:'Merengue'},
+  {id:21,nombre:'Tipitapa',artista:'Los Karkiks',genero:'Cumbia'},
+  {id:22,nombre:'Jugo De Piña',artista:'El Super Show De Los Vaskez',genero:'Cumbia'},
+  {id:23,nombre:'Me Bebí Tu Recuerdo',artista:'Galy Galiano',genero:'Bolero'},
+  {id:24,nombre:'No Me Sé Rajar',artista:'Vicente Fernández',genero:'Corrido'},
+  {id:25,nombre:'Se Te Olvidó',artista:'Marimba Orquesta Maria Isabel',genero:'Cumbia'},
+  {id:26,nombre:'Apagame La Vela',artista:'Marimba Orquesta Maria Isabel',genero:'Cumbia'},
+  {id:27,nombre:'Yolanda',artista:'Pastor Lopez',genero:'Bolero'},
+  {id:28,nombre:'Golpe Con Golpe',artista:'Pastor Lopez',genero:'Corrido'},
+  {id:29,nombre:'Traicionera',artista:'Pastor Lopez',genero:'Cumbia'},
+  {id:30,nombre:'Lloró Mi Corazón',artista:'Pastor Lopez',genero:'Bolero'},
+  {id:31,nombre:'Mentirosa',artista:'Pastor Lopez',genero:'Cumbia'},
+  {id:32,nombre:'El Superman',artista:'Los Cartageneros',genero:'Cumbia'},
+  {id:33,nombre:'Tina Tina',artista:'Santa Cruz Guanacaste',genero:'Cumbia'},
+  {id:34,nombre:'La Pollera Colorá',artista:'Charlie Zaa, Yuri, La Sonora Dinamita',genero:'Cumbia'},
+  {id:35,nombre:'Brisas Del Valle',artista:'Pastor Lopez',genero:'Cumbia'},
+  {id:36,nombre:'Se Va el Caimán',artista:"Billo's Caracas Boys",genero:'Cumbia'},
+  {id:37,nombre:'La Suavecita',artista:'La Sonora Dinamita',genero:'Cumbia'},
+  {id:38,nombre:'Violencia',artista:'Gerardo Y Los Hicsos',genero:'Corrido'},
+  {id:39,nombre:'La Sirenita',artista:'Rigo Tovar',genero:'Cumbia'},
+  {id:40,nombre:'Me Quiero Casar',artista:'Rigo Tovar',genero:'Cumbia'},
+  {id:41,nombre:'Pajaro Cantaor',artista:'Pitusa',genero:'Cumbia'},
+  {id:42,nombre:'Panameña',artista:'Marimba Orquesta Los Golobirnos',genero:'Cumbia'},
+  {id:43,nombre:'Derrumbes',artista:'Memo Neyra',genero:'Pasodoble'},
+  {id:44,nombre:'Cayetano Baila',artista:'Los Melódicos',genero:'Merengue'},
+  {id:45,nombre:'Playa Blanca',artista:'Nelson Henriquez',genero:'Merengue'},
+  {id:46,nombre:'La pulguita',artista:'Santa Cruz Guanacaste',genero:'Cumbia'},
+  {id:47,nombre:'El Manicero',artista:'Santa Cruz Guanacaste',genero:'Cumbia'},
+  {id:48,nombre:'El Jefe Tiqui Tiqui',artista:'Santa Cruz Guanacaste',genero:'Cumbia'},
+  {id:49,nombre:'Amor de Temporada',artista:'Santa Cruz Guanacaste',genero:'Cumbia'},
+  {id:50,nombre:'El Dazón de Piangüita',artista:'José Contreras Saxofonista',genero:'Cumbia'},
+  {id:51,nombre:'Sergio el Bailador',artista:'Bronco',genero:'Corrido'},
+  {id:52,nombre:'Rosa María',artista:'Los 50 De Joselito',genero:'Merengue'},
+  {id:53,nombre:'Diséñame',artista:'Joan Sebastian',genero:'Bolero'},
+  {id:54,nombre:'Libro Abierto',artista:'Simba Musical',genero:'Bolero'},
+  {id:55,nombre:'Nos Estorbo La Ropa',artista:'Simba Musical',genero:'Cumbia'},
+  {id:56,nombre:'Que Nos Entierren Juntos',artista:'Grupo Miramar',genero:'Bolero'},
+  {id:57,nombre:'Tumba Falsa',artista:'Los Tigres Del Norte',genero:'Corrido'},
+  {id:58,nombre:'La Jaula De Oro',artista:'Los Tigres Del Norte',genero:'Corrido'},
+  {id:59,nombre:'La Puerta Negra',artista:'Los Tigres Del Norte',genero:'Corrido'},
+  {id:60,nombre:'Ni Parientes Somos',artista:'Los Tigres Del Norte',genero:'Corrido'},
+  {id:61,nombre:'La Granja',artista:'Los Tigres Del Norte',genero:'Corrido'},
+  {id:62,nombre:'La del Moño Colorado',artista:'Los Pedernales',genero:'Corrido'},
+  {id:63,nombre:'Una Lagrima Y Un Recuerdo',artista:'Simba Musical',genero:'Bolero'},
+  {id:64,nombre:'Celos De Amor',artista:'Simba Musical',genero:'Bolero'},
+  {id:65,nombre:'Perfume de Gardenias',artista:'La Sonora Santanera',genero:'Bolero'},
+  {id:66,nombre:'El Pezcueso Retorcido',artista:"Los Karkik's",genero:'Cumbia'},
+  {id:67,nombre:'Son tus perjúmenes mujer',artista:'Erick Sánchez Y Su Orquesta',genero:'Cumbia'},
+  {id:68,nombre:'Ya No Se Usa Peludo',artista:"Los Karkik's",genero:'Cumbia'},
+  {id:69,nombre:'Pasión',artista:'Mauricio Penagos Villegas',genero:'Bolero'},
+  {id:70,nombre:'Grito Vagabundo',artista:'La Sonora Dinamita',genero:'Cumbia'},
+  {id:71,nombre:'La Araña Picúa',artista:'La Sonora Dinamita',genero:'Cumbia'},
+  {id:72,nombre:'Papel de la Calle',artista:'Alci Acosta',genero:'Cumbia'},
+  {id:73,nombre:'Mi Cafetal',artista:'Marimba Lirica De Oro',genero:'Cumbia'},
+  {id:74,nombre:'La Mucura',artista:'Simba Musical',genero:'Cumbia'},
+  {id:75,nombre:'Juana la Cubana',artista:'Fito Olivares Y La Pura Sabrosura',genero:'Cumbia'},
+  {id:76,nombre:'La Negra Salomé',artista:'Los Hicsos',genero:'Cumbia'},
+  {id:77,nombre:'La Guitarra y la Mujer',artista:'Los Caminantes',genero:'Corrido'},
+  {id:78,nombre:'El Perico',artista:'Fito Olivares Y La Pura Sabrosura',genero:'Cumbia'},
+  {id:79,nombre:'17 Años',artista:'Los Ángeles Azules',genero:'Cumbia'},
+  {id:80,nombre:'Como Tu Mujer',artista:'Rocío Dúrcal',genero:'Bolero'},
+  {id:81,nombre:'Como tu mujer',artista:'Tierra Canela',genero:'Bolero'},
+  {id:82,nombre:'Cómo Te Voy A Olvidar',artista:'Los Ángeles Azules',genero:'Cumbia'},
+  {id:83,nombre:'La Parabólica',artista:'La Sonora Dinamita, El Bebé',genero:'Cumbia'},
+  {id:84,nombre:'Pegaito',artista:'Los Flamers',genero:'Merengue'},
+  {id:85,nombre:'Tres Perlas',artista:"Billo's Caracas Boys",genero:'Bolero'},
+  {id:86,nombre:'Ay jalisco no te rajes',artista:'Jorge Negrete',genero:'Corrido'},
+  {id:87,nombre:'Tiene Espinas el Rosal',artista:'Grupo Cañaveral De Humberto Pabón',genero:'Corrido'},
+  {id:88,nombre:'Nunca Es Suficiente',artista:'Los Ángeles Azules, Natalia Lafourcade',genero:'Cumbia'},
+  {id:89,nombre:'Qué Bello',artista:'La Sonora Dinamita, Kika Edgar',genero:'Cumbia'},
+  {id:90,nombre:'Suavecito Suavecito',artista:'Laura Leon',genero:'Cumbia'},
+  {id:91,nombre:'La Burra Tuerta',artista:'Aniceto Molina',genero:'Cumbia'},
+  {id:92,nombre:'Tu Partida',artista:'Pastor Lopez',genero:'Bolero'},
+  {id:93,nombre:'Gato montes',artista:'Mariachi Guadalajara de Silvestre Vargas',genero:'Pasodoble'},
+  {id:94,nombre:'La Ley del Monte',artista:'Los Alegrisimos',genero:'Corrido'},
+  {id:95,nombre:'Mosaico Pasos Dobles',artista:'Los Alegrisimos',genero:'Pasodoble'},
+  {id:96,nombre:'Lejanía',artista:'Los Alegrisimos',genero:'Corrido'},
+  {id:97,nombre:'Fosforera',artista:'Los Alegrisimos',genero:'Cumbia'},
+  {id:98,nombre:'En el Mundo',artista:'Banda Taurina de las Ventas',genero:'Pasodoble'},
+  {id:99,nombre:'Pasodobles',artista:'Guayacán Orquesta',genero:'Pasodoble'},
+  {id:100,nombre:'Cacerola',artista:'Marimba Orquesta Los Golobirnos',genero:'Cumbia'},
+  {id:101,nombre:'Cascos Ligeros',artista:'Alejandro Fernández',genero:'Corrido'},
+];
+
+// --- STATE ---
+let state = {
+  pagina: 'repertorio', // repertorio | canciones | sets | eventos | musicos
+  autenticado: false,
+  canciones: [],
+  sets: [],
+  eventos: [],
+  // UI
+  filtroGenero: 'Todos',
+  busqueda: '',
+  setSeleccionado: null,
+  eventoSeleccionado: null,
+  modal: null,
+  modalData: {},
+  setGeneroFiltro: 'Todos',
+  nextId: 200,
+  passwordError: false,
+};
+
+// ── Supabase ──────────────────────────────────────────────
+const SUPA_URL = 'https://jioeydtpmckbrwgnyvcr.supabase.co';
+const SUPA_KEY = 'sb_publishable_6frCBaZ2TMCp2zSPJTM8Zw_1g4DkemE';
+
+// ── Supabase cliente con Realtime ─────────────────────────
+const SUPA_URL = 'https://jioeydtpmckbrwgnyvcr.supabase.co';
+const SUPA_KEY = 'sb_publishable_6frCBaZ2TMCp2zSPJTM8Zw_1g4DkemE';
+
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function save() {
+  await Promise.all([
+    db.from('canciones').upsert(state.canciones, { onConflict: 'id' }),
+    db.from('sets').upsert(
+      state.sets.map(s => ({...s, canciones: JSON.stringify(s.canciones)})),
+      { onConflict: 'id' }
+    ),
+    db.from('eventos').upsert(
+      state.eventos.map(e => ({...e, slots: JSON.stringify(e.slots||[])})),
+      { onConflict: 'id' }
+    ),
+  ]);
+}
+
+async function saveEventos() {
+  await db.from('eventos').upsert(
+    state.eventos.map(e => ({...e, slots: JSON.stringify(e.slots||[])})),
+    { onConflict: 'id' }
+  );
+}
+
+function parseEventos(rows) {
+  return rows.map(e => ({
+    ...e,
+    slots: typeof e.slots === 'string' ? JSON.parse(e.slots) : (e.slots||[]),
+    publicado: e.publicado === true || e.publicado === 'true'
+  }));
+}
+
+async function loadFromDB() {
+  state.cargando = true;
+  render();
+  try {
+    const [{ data: cRows }, { data: sRows }, { data: eRows }] = await Promise.all([
+      db.from('canciones').select('*').order('id'),
+      db.from('sets').select('*').order('id'),
+      db.from('eventos').select('*').order('id'),
+    ]);
+    state.canciones = (cRows && cRows.length) ? cRows : CANCIONES_INICIAL;
+    if (!cRows || !cRows.length) await db.from('canciones').upsert(state.canciones, { onConflict: 'id' });
+    state.sets = (sRows||[]).map(s => ({...s, canciones: typeof s.canciones === 'string' ? JSON.parse(s.canciones) : (s.canciones||[])}));
+    state.eventos = parseEventos(eRows||[]);
+  } catch(err) {
+    console.error('DB error:', err);
+    state.canciones = CANCIONES_INICIAL;
+  }
+  state.cargando = false;
+  render();
+  iniciarRealtime();
+}
+
+function iniciarRealtime() {
+  // Escucha cambios en la tabla eventos en tiempo real
+  db.channel('eventos-publicos')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'eventos'
+    }, (payload) => {
+      // Actualizar solo el evento que cambió
+      if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+        const updated = payload.new;
+        const parsed = {
+          ...updated,
+          slots: typeof updated.slots === 'string' ? JSON.parse(updated.slots) : (updated.slots||[]),
+          publicado: updated.publicado === true
+        };
+        const idx = state.eventos.findIndex(e => e.id === parsed.id);
+        if (idx >= 0) state.eventos[idx] = parsed;
+        else state.eventos.push(parsed);
+        // Si estamos en la pantalla pública, refrescar
+        if (state.pagina === 'repertorio' || !state.autenticado) render();
+      }
+      if (payload.eventType === 'DELETE') {
+        state.eventos = state.eventos.filter(e => e.id !== payload.old.id);
+        if (state.pagina === 'repertorio' || !state.autenticado) render();
+      }
+    })
+    .subscribe((status) => {
+      console.log('Realtime status:', status);
+    });
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function render() {
+  if (state.cargando) {
+    document.getElementById('app').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;color:var(--text3)">
+        <i class="ti ti-music" style="font-size:40px;color:#7F77DD"></i>
+        <div style="font-size:14px">Cargando repertorio...</div>
+      </div>`;
+    return;
+  }
+  const main = document.querySelector('.main');
+  const scrollY = main ? main.scrollTop : 0;
+  document.getElementById('app').innerHTML = buildApp();
+  attachEvents();
+  const newMain = document.querySelector('.main');
+  if (newMain && scrollY) newMain.scrollTop = scrollY;
+}
+
+function signoBadge(c) {
+  if (!c.nota) return `<span class="signo-badge signo-nd">ND</span>`;
+  const mod = MODIFICADORES.find(m => m.val === (c.modificador||''));
+  const sym = mod ? mod.sym : '';
+  return `<span class="signo-badge">${c.nota}${sym}</span>`;
+}
+
+function badgeClass(g) {
+  const k = GENRE_KEY(g);
+  if (k === 'cumbia') return 'badge-cumbia';
+  if (k === 'merengue') return 'badge-merengue';
+  if (k === 'corrido') return 'badge-corrido';
+  if (k === 'bolero') return 'badge-bolero';
+  if (k === 'pasodoble') return 'badge-pasodoble';
+  return 'badge-otro';
+}
+
+function badge(g) {
+  return `<span class="badge ${badgeClass(g)}">${g}</span>`;
+}
+
+function generoCount(g) {
+  if (g === 'Todos') return state.canciones.length;
+  return state.canciones.filter(c => c.genero === g).length;
+}
+
+function cancionById(id) { return state.canciones.find(c => c.id === id); }
+function setById(id) { return state.sets.find(s => s.id === id); }
+
+function setDuration(set) {
+  return Math.round(set.canciones.length * 3.5);
+}
+
+function setGenerosBadges(set) {
+  const gs = [...new Set(set.canciones.map(id => (cancionById(id)||{genero:'?'}).genero))];
+  return gs.slice(0,3).map(g => badge(g)).join('');
+}
+
+function filteredCanciones() {
+  return state.canciones.filter(c => {
+    const matchGenero = state.filtroGenero === 'Todos' || c.genero === state.filtroGenero;
+    const matchBusqueda = !state.busqueda || 
+      c.nombre.toLowerCase().includes(state.busqueda.toLowerCase()) ||
+      c.artista.toLowerCase().includes(state.busqueda.toLowerCase());
+    return matchGenero && matchBusqueda;
+  });
+}
+
+// --- BUILD PARTS ---
+
+// genero -> css class key
+function gcClass(g) {
+  const k = GENRE_KEY(g);
+  if (k === 'cumbia') return 'gc-cumbia';
+  if (k === 'merengue') return 'gc-merengue';
+  if (k === 'corrido') return 'gc-corrido';
+  if (k === 'bolero') return 'gc-bolero';
+  if (k === 'pasodoble') return 'gc-pasodoble';
+  return 'gc-otro';
+}
+
+// --- PAGE: CANCIONES ---
+function buildPageCanciones() {
+  const lista = filteredCanciones();
+  const mostrandoFiltro = state.filtroGenero !== 'Todos';
+  return `
+  <div class="page-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div>
+        <div class="page-title">${mostrandoFiltro ? state.filtroGenero : 'Canciones'}</div>
+        <div class="page-sub">${mostrandoFiltro ? `${lista.length} canciones · ` : 'Biblioteca · '}<span style="color:var(--text2)">${state.canciones.length} total</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-content">
+    <!-- Genre button cards -->
+    <div class="genero-grid">
+      <button class="genero-card genero-card-todos gc-todos ${state.filtroGenero === 'Todos' ? 'active' : ''}" data-filtro="Todos">
+        <div class="genero-card-label">Todos los géneros</div>
+        <div class="genero-card-count">${state.canciones.length}</div>
+      </button>
+      ${GENEROS.filter(g => generoCount(g) > 0).map(g => `
+        <button class="genero-card ${gcClass(g)} ${state.filtroGenero === g ? 'active' : ''}" data-filtro="${g}">
+          <div class="genero-card-label">${g}</div>
+          <div class="genero-card-count">${generoCount(g)}</div>
+        </button>
+      `).join('')}
+      <button class="genero-card gc-agregar" id="btn-add-song">
+        <div class="genero-card-label">Agregar</div>
+        <div class="genero-card-count" style="font-size:32px;line-height:1">+</div>
+      </button>
+    </div>
+
+    <!-- Search + list -->
+    <div class="card">
+      <div class="card-header" style="gap:10px">
+        <div class="search-wrap" style="flex:1">
+          <i class="ti ti-search"></i>
+          <input class="input" id="busqueda-input" placeholder="Buscar canción o artista..." value="${state.busqueda}">
+        </div>
+        ${mostrandoFiltro ? `<button class="btn btn-secondary btn-sm" data-filtro="Todos" style="white-space:nowrap"><i class="ti ti-x"></i> ${state.filtroGenero}</button>` : ''}
+      </div>
+      ${lista.length === 0 ? `<div class="empty"><i class="ti ti-music-off"></i><div class="empty-title">Sin resultados</div>Cambia el filtro o la búsqueda</div>` : ''}
+      ${lista.map((c, i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:0.5px solid var(--border)">
+          <span style="font-size:12px;color:var(--text3);min-width:22px;text-align:right;flex-shrink:0">${i+1}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nombre}</div>
+            <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.artista}</div>
+          </div>
+          ${signoBadge(c)}
+          ${badge(c.genero)}
+          <button class="btn-icon btn-edit-song" data-id="${c.id}"><i class="ti ti-edit"></i></button>
+          <button class="btn-icon btn-del-song" data-id="${c.id}"><i class="ti ti-trash"></i></button>
+        </div>
+      `).join('')}
+      ${lista.length > 0 ? `<div style="padding:10px 14px;font-size:12px;color:var(--text3);text-align:center">${lista.length} canciones</div>` : ''}
+    </div>
+  </div>`;
+}
+
+// --- PAGE: SETS ---
+function buildPageSets() {
+  const sel = state.setSeleccionado ? setById(state.setSeleccionado) : null;
+  return `
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div><div class="page-title">Sets</div><div class="page-sub">Grupos de canciones reutilizables</div></div>
+      <button class="btn btn-primary" id="btn-add-set"><i class="ti ti-plus"></i> Nuevo set</button>
+    </div>
+  </div>
+  <div class="page-content">
+    <div class="two-col">
+      <div>
+        <div class="set-list">
+          ${state.sets.length === 0 ? `<div class="empty"><i class="ti ti-playlist"></i><div class="empty-title">Sin sets todavía</div>Crea tu primer set con el botón de arriba</div>` : ''}
+          ${state.sets.map(s => `
+            <div class="set-card ${state.setSeleccionado === s.id ? 'selected' : ''}" data-set-select="${s.id}">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div class="set-card-name">${s.nombre}</div>
+                <div style="display:flex;gap:2px">
+                  <button class="btn-icon btn-del-set" data-id="${s.id}" title="Eliminar"><i class="ti ti-trash"></i></button>
+                </div>
+              </div>
+              <div class="set-card-meta">${s.canciones.length} canciones · ~${setDuration(s)} min</div>
+              <div class="set-card-badges">${setGenerosBadges(s)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div>
+        ${sel ? buildSetEditor(sel) : `<div class="card" style="height:200px;display:flex;align-items:center;justify-content:center"><div class="empty"><i class="ti ti-hand-click"></i><div class="empty-title">Selecciona un set</div>Haz clic en un set para editarlo</div></div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildSetEditor(set) {
+  const cancionesDelSet = set.canciones.map(id => cancionById(id)).filter(Boolean);
+  const disponibles = state.canciones.filter(c => !set.canciones.includes(c.id));
+  return `
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Editando set</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" id="btn-rename-set" data-id="${set.id}"><i class="ti ti-pencil"></i> Renombrar</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="font-size:16px;font-weight:600;margin-bottom:4px">${set.nombre}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px">${cancionesDelSet.length} canciones · ~${setDuration(set)} min</div>
+      
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Canciones del set</div>
+      <div id="set-songs-list">
+        ${cancionesDelSet.map((c, i) => `
+          <div class="song-row-editor" draggable="true" data-song-idx="${i}" data-song-id="${c.id}">
+            <span class="drag-handle"><i class="ti ti-grip-vertical"></i></span>
+            <span class="song-num-sm">${i+1}</span>
+            <div class="song-info">
+              <div class="song-name">${c.nombre}</div>
+              <div class="song-artist">${c.artista}</div>
+            </div>
+            ${badge(c.genero)}
+            <button class="btn-icon btn-remove-from-set" data-set="${set.id}" data-song="${c.id}" title="Quitar"><i class="ti ti-x"></i></button>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">
+        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Agregar canción</div>
+
+        <!-- Genre pills -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+          ${['Todos', ...GENEROS].map(g => {
+            const isActive = (state.setGeneroFiltro || 'Todos') === g;
+            const colors = {
+              Cumbia:    isActive ? 'background:#0f5c3a;color:#9FE1CB;border-color:#1D9E75' : 'background:#062b1e;color:#5DCAA5;border-color:#0f5c3a',
+              Merengue:  isActive ? 'background:#2d2870;color:#CECBF6;border-color:#7F77DD' : 'background:#16143a;color:#7F77DD;border-color:#2d2870',
+              Corrido:   isActive ? 'background:#5a3a0a;color:#FAEEDA;border-color:#EF9F27' : 'background:#291a05;color:#EF9F27;border-color:#5a3a0a',
+              Bolero:    isActive ? 'background:#5c1a35;color:#F4C0D1;border-color:#D4537E' : 'background:#2a0a18;color:#ED93B1;border-color:#5c1a35',
+              Pasodoble: isActive ? 'background:#0c3560;color:#E6F1FB;border-color:#378ADD' : 'background:#061828;color:#85B7EB;border-color:#0c3560',
+              Otro:      isActive ? 'background:#333;color:#eee;border-color:#666' : 'background:#1a1a1a;color:#888;border-color:#333',
+              Todos:     isActive ? 'background:#7F77DD;color:#fff;border-color:#7F77DD' : 'background:var(--surface2);color:var(--text3);border-color:var(--border2)',
+            };
+            return '<button class="set-genre-pill" data-genre="' + g + '" style="padding:4px 10px;border-radius:20px;border:0.5px solid;font-size:11px;font-weight:500;cursor:pointer;transition:all 0.12s;' + (colors[g]||colors.Todos) + '">' + g + '</button>';
+          }).join('')}
+        </div>
+
+        <!-- Search -->
+        <div class="search-wrap" style="margin-bottom:8px">
+          <i class="ti ti-search"></i>
+          <input class="input" id="set-search" placeholder="Buscar en biblioteca...">
+        </div>
+        <div id="set-search-results" style="max-height:220px;overflow-y:auto">
+          ${(() => {
+            const g = state.setGeneroFiltro || 'Todos';
+            return disponibles.filter(c => g === 'Todos' || c.genero === g).slice(0,10).map(c => `
+              <div class="song-row-editor" style="padding:8px 4px;cursor:pointer" data-add-to-set="${set.id}" data-song-id="${c.id}">
+                <div class="song-info">
+                  <div class="song-name">${c.nombre}</div>
+                  <div class="song-artist">${c.artista}</div>
+                </div>
+                ${badge(c.genero)}
+                <button class="btn btn-secondary btn-sm" data-add-to-set="${set.id}" data-song-id="${c.id}"><i class="ti ti-plus"></i></button>
+              </div>
+            `).join('');
+          })()}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- PAGE: EVENTOS ---
+function buildPageEventos() {
+  const ev = state.eventoSeleccionado ? state.eventos.find(e => e.id === state.eventoSeleccionado) : null;
+  return `
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div><div class="page-title">Eventos</div><div class="page-sub">Repertorios por evento</div></div>
+      <button class="btn btn-primary" id="btn-add-evento"><i class="ti ti-plus"></i> Nuevo evento</button>
+    </div>
+  </div>
+  <div class="page-content">
+    <div class="two-col">
+      <div>
+        <div class="set-list">
+          ${state.eventos.length === 0 ? `<div class="empty"><i class="ti ti-calendar-event"></i><div class="empty-title">Sin eventos</div>Crea tu primer evento</div>` : ''}
+          ${state.eventos.map(ev => {
+            const totalCanciones = (ev.slots||[]).filter(sl=>sl.type==='set').reduce((acc,sl)=>{ const s=setById(sl.id); return acc+(s?s.canciones.length:0); }, 0);
+            const totalMin = Math.round(totalCanciones * 3.5);
+            const isPublicado = ev.publicado === true;
+            return `
+            <div class="set-card ${state.eventoSeleccionado === ev.id ? 'selected' : ''}" data-ev-select="${ev.id}">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div class="set-card-name">${ev.nombre}</div>
+                <div style="display:flex;gap:4px;align-items:center">
+                  ${isPublicado ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:#0f5c3a;color:#9FE1CB;border:0.5px solid #1D9E75">● PUBLICADO</span>` : ''}
+                  <button class="btn-icon btn-del-evento" data-id="${ev.id}"><i class="ti ti-trash"></i></button>
+                </div>
+              </div>
+              <div class="set-card-meta">${ev.fecha || 'Sin fecha'} · ${ev.hora || ''} · ${ev.lugar || ''}</div>
+              <div class="set-card-meta" style="margin-top:4px">${(ev.slots||[]).filter(sl=>sl.type==='set').length} sets · ${totalCanciones} canciones · ~${totalMin} min</div>
+              <button class="btn-publicar-evento ${isPublicado ? 'publicado' : ''}" data-id="${ev.id}" style="margin-top:8px;width:100%;padding:7px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;${isPublicado ? 'background:#0f5c3a;color:#9FE1CB' : 'background:#16143a;color:#AFA9EC;border:0.5px solid #2d2870'}">
+                ${isPublicado ? '<i class="ti ti-eye-off" style="font-size:13px;vertical-align:-2px"></i> Despublicar' : '<i class="ti ti-send" style="font-size:13px;vertical-align:-2px"></i> Publicar repertorio'}
+              </button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div>
+        ${ev ? buildEventoEditor(ev) : `<div class="card" style="height:200px;display:flex;align-items:center;justify-content:center"><div class="empty"><i class="ti ti-hand-click"></i><div class="empty-title">Selecciona un evento</div>Haz clic para ver y armar el repertorio</div></div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildEventoEditor(ev) {
+  const totalCanciones = (ev.slots||[]).filter(sl=>sl.type==='set').reduce((acc,sl)=>{ const s=setById(sl.id); return acc+(s?s.canciones.length:0); }, 0);
+  const totalMin = Math.round(totalCanciones * 3.5);
+  const setsDisponibles = state.sets.filter(s => !(ev.slots||[]).some(sl=>sl.type==='set'&&sl.id===s.id));
+  let numGlobal = 1;
+
+  return `
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">${ev.nombre}</div>
+        <div style="font-size:11px;color:var(--text3)">${ev.fecha || ''} · ${ev.lugar || ''}</div>
+      </div>
+      <div style="display:flex;gap:6px;font-size:12px;color:var(--text3)">
+        <span>${totalCanciones} canciones</span>
+        <span>·</span>
+        <span>~${totalMin} min</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Repertorio del evento</div>
+      ${(ev.slots||[]).length === 0 ? `<div style="color:var(--text3);font-size:13px;padding:12px 0">Agrega sets al repertorio</div>` : ''}
+      ${(ev.slots||[]).map((slot, idx) => {
+        const slots = ev.slots || [];
+        const isLast = idx === slots.length - 1;
+        const nextIsDescanso = !isLast && slots[idx + 1] && slots[idx + 1].type === 'descanso';
+        const prevIsDescanso = idx > 0 && slots[idx - 1] && slots[idx - 1].type === 'descanso';
+        const betweenBtn = (!isLast && !nextIsDescanso && !prevIsDescanso)
+          ? `<button class="btn-descanso-entre" data-ev="${ev.id}" data-after="${idx}"><i class="ti ti-plus"></i> Agregar descanso</button>`
+          : '';
+
+        if (slot.type === 'descanso') {
+          const block = `<div class="descanso-block" style="margin-bottom:8px;justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:8px;color:var(--text3)"><i class="ti ti-coffee"></i> Descanso</span>
+            <button class="btn-icon btn-remove-set-from-ev" data-ev="${ev.id}" data-set-idx="${idx}"><i class="ti ti-x"></i></button>
+          </div>`;
+          return block + betweenBtn;
+        }
+        const s = setById(slot.id);
+        if (!s) return '';
+        const canciones = s.canciones.map(id => cancionById(id)).filter(Boolean);
+        let setNum = slots.slice(0, idx).filter(sl => sl.type === 'set').length + 1;
+        const block = `<div class="rep-block">
+          <div class="rep-block-header">
+            <span class="drag-handle"><i class="ti ti-grip-vertical"></i></span>
+            <div style="flex:1">
+              <span style="font-size:13px;font-weight:600;color:var(--text)">${s.nombre}</span>
+              <span style="font-size:11px;color:var(--text3);margin-left:8px">${canciones.length} canciones</span>
+            </div>
+            <button class="btn-icon btn-remove-set-from-ev" data-ev="${ev.id}" data-set-idx="${idx}"><i class="ti ti-x"></i></button>
+          </div>
+          <div class="rep-block-songs">
+            ${canciones.map(c => {
+              const n = numGlobal++;
+              return '<div class="musician-song-row" style="padding:8px 14px"><span class="musician-num">' + n + '</span><div style="flex:1"><div class="song-name">' + c.nombre + '</div><div class="song-artist">' + c.artista + '</div></div>' + signoBadge(c) + badge(c.genero) + '</div>';
+            }).join('')}
+          </div>
+        </div>`;
+        return block + betweenBtn;
+      }).join('')}
+
+      <button class="btn-agregar-set-final" data-ev="${ev.id}"><i class="ti ti-plus"></i> Agregar set</button>
+
+      ${setsDisponibles.length > 0 && state.modalData && state.modalData.showSetPicker === ev.id ? `
+      <div style="margin-top:10px;border-radius:var(--radius);border:0.5px solid var(--border);overflow:hidden">
+        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:10px 14px 8px;background:var(--surface2);border-bottom:0.5px solid var(--border)">Elegir set</div>
+        ${setsDisponibles.map(s => `
+          <button class="btn-add-set-to-ev" data-ev="${ev.id}" data-set="${s.id}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border:none;border-bottom:0.5px solid var(--border);background:var(--surface);cursor:pointer;text-align:left;transition:background 0.12s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600;color:var(--text)">${s.nombre}</div>
+              <div style="font-size:11px;color:var(--text3)">${s.canciones.length} canciones</div>
+            </div>
+            ${setGenerosBadges(s)}
+          </button>
+        `).join('')}
+      </div>` : ''}
+
+      <div class="action-bar" style="margin-top:16px">
+        <button class="btn btn-secondary" id="btn-ver-musicos" data-ev="${ev.id}"><i class="ti ti-eye"></i> Ver como músico</button>
+        <button class="btn btn-secondary" id="btn-copy-link" data-ev="${ev.id}"><i class="ti ti-copy"></i> Copiar link</button>
+        <button class="btn btn-primary" id="btn-print-repertorio" data-ev="${ev.id}"><i class="ti ti-printer"></i> Imprimir</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- PAGE: REPERTORIO (home — vista pública para músicos) ---
+function buildPageRepertorio() {
+  // Find the published evento
+  const ev = state.eventos.find(e => e.publicado) || null;
+
+  if (!ev || !(ev.slots||[]).some(sl=>sl.type==='set')) {
+    return `
+    <div class="musician-page" style="padding-top:40px">
+      <div class="empty">
+        <i class="ti ti-calendar-off"></i>
+        <div class="empty-title">Sin repertorio publicado</div>
+        <div style="font-size:12px">El director aún no ha publicado el repertorio de hoy</div>
+      </div>
+      <div style="margin-top:32px">
+        <button class="btn-acceso" id="btn-acceso-admin">
+          <i class="ti ti-lock"></i> Acceso
+        </button>
+      </div>
+    </div>`;
+  }
+
+  let numGlobal = 1;
+  const totalCanciones = (ev.slots||[]).filter(sl=>sl.type==='set').reduce((a,sl)=>{ const s=setById(sl.id); return a+(s?s.canciones.length:0); }, 0);
+
+  return `
+  <div class="musician-page">
+    <button class="btn-instalar" id="btn-instalar-pwa" style="display:none">
+      <i class="ti ti-download"></i> Descargar aplicación
+    </button>
+    <div style="padding:16px 0 8px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:var(--text)">${ev.nombre}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px">${[ev.fecha, ev.hora, ev.lugar].filter(Boolean).join(' · ')}</div>
+    </div>
+    <div style="display:flex;gap:14px;margin-bottom:14px;font-size:12px;color:var(--text3);background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px">
+      <span><b style="color:var(--text)">${totalCanciones}</b> canciones</span>
+      <span>·</span>
+      <span><b style="color:var(--text)">${(ev.slots||[]).filter(sl=>sl.type==='set').length}</b> sets</span>
+      <span>·</span>
+      <span>~<b style="color:var(--text)">${Math.round(totalCanciones * 3.5)}</b> min</span>
+    </div>
+    ${(ev.slots||[]).map((slot, si) => {
+      if (slot.type === 'descanso') {
+        return `<div class="descanso-block">— Descanso —</div>`;
+      }
+      const s = setById(slot.id);
+      if (!s) return '';
+      const canciones = s.canciones.map(id => cancionById(id)).filter(Boolean);
+      const setNum = (ev.slots||[]).slice(0, si).filter(sl => sl.type === 'set').length + 1;
+      return `
+      <div class="musician-set-block">
+        <div class="musician-set-header">
+          <span class="musician-set-name" style="font-weight:700;color:var(--text);font-size:13px">Set ${setNum} · ${s.nombre}</span>
+          <span style="font-size:11px;color:var(--text3)">${canciones.length} canciones</span>
+        </div>
+        ${canciones.map(c => `
+          <div class="musician-song-row">
+            <span class="musician-num">${numGlobal++}</span>
+            <div style="flex:1">
+              <div class="musician-song-name">${c.nombre}</div>
+              <div class="musician-artist">${c.artista}</div>
+            </div>
+            ${signoBadge(c)}
+            ${badge(c.genero)}
+          </div>
+        `).join('')}
+      </div>`;
+    }).join('')}
+    <div style="text-align:center;font-size:11px;color:var(--text3);padding:14px 0 6px;display:flex;align-items:center;justify-content:center;gap:5px">
+      <i class="ti ti-eye" style="font-size:13px"></i> Vista de solo lectura
+    </div>
+    <button class="btn-acceso" id="btn-acceso-admin">
+      <i class="ti ti-lock"></i> Acceso
+    </button>
+    <div style="height:20px"></div>
+  </div>`;
+}
+
+// --- PASSWORD OVERLAY ---
+function buildPasswordOverlay() {
+  if (state.modal !== 'password') return '';
+  const pin = state.modalData.pin || '';
+  return `
+  <div class="pwd-overlay" id="pwd-overlay">
+    <div class="pwd-box">
+      <div class="pwd-title"><i class="ti ti-lock" style="font-size:20px;vertical-align:-3px;color:#AFA9EC"></i> Acceso</div>
+      <div class="pwd-sub">Ingresa el código de acceso</div>
+      <div class="pwd-dots">
+        ${[0,1,2,3].map(i => `<div class="pwd-dot ${i < pin.length ? 'filled' : ''}"></div>`).join('')}
+      </div>
+      <div class="pwd-error">${state.passwordError ? 'Código incorrecto' : ''}</div>
+      <div class="pwd-numpad">
+        ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="pwd-key" data-key="${n}">${n}</button>`).join('')}
+        <button class="pwd-key" style="visibility:hidden"></button>
+        <button class="pwd-key" data-key="0">0</button>
+        <button class="pwd-key del" data-key="del"><i class="ti ti-backspace"></i></button>
+      </div>
+      <button class="pwd-cancel" id="pwd-cancel">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+// --- PAGE: MUSICOS (desde admin, para preview) ---
+function buildPageMusicos(evId) {
+  const ev = evId ? state.eventos.find(e => e.id === evId) : (state.eventos[0] || null);
+  if (!ev) return `<div class="musician-page"><div class="empty" style="margin-top:60px"><i class="ti ti-calendar-off"></i><div class="empty-title">Sin evento activo</div>Crea un evento primero</div></div>`;
+  let numGlobal = 1;
+  return `
+  <div class="musician-page">
+    <div class="musician-header">
+      <div class="musician-event-title">${ev.nombre}</div>
+      <div class="musician-event-sub">${ev.fecha ? `<i class="ti ti-calendar" style="font-size:13px;vertical-align:-2px"></i> ${ev.fecha}` : ''} ${ev.lugar ? `&nbsp;·&nbsp; <i class="ti ti-map-pin" style="font-size:13px;vertical-align:-2px"></i> ${ev.lugar}` : ''}</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;font-size:12px;color:var(--text3);background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px">
+      <span><b style="color:var(--text)">${(ev.slots||[]).filter(sl=>sl.type==='set').reduce((a,sl)=>{const s=setById(sl.id);return a+(s?s.canciones.length:0);},0)}</b> canciones</span>
+      <span>·</span>
+      <span><b style="color:var(--text)">${(ev.slots||[]).filter(sl=>sl.type==='set').length}</b> sets</span>
+      <span>·</span>
+      <span>~<b style="color:var(--text)">${Math.round((ev.slots||[]).filter(sl=>sl.type==='set').reduce((a,sl)=>{const s=setById(sl.id);return a+(s?s.canciones.length:0);},0)*3.5)}</b> min</span>
+    </div>
+    ${(ev.slots||[]).map((slot, si) => {
+      if (slot.type==='descanso') { return `<div class="descanso-block">— Descanso —</div>`; }
+      const s = setById(slot.id);
+      if (!s) return '';
+      const canciones = s.canciones.map(id => cancionById(id)).filter(Boolean);
+      const setNum = (ev.slots||[]).slice(0, si).filter(sl => sl.type === 'set').length + 1;
+      return `
+      <div class="musician-set-block">
+        <div class="musician-set-header">
+          <span class="musician-set-name">Set ${setNum} · ${s.nombre}</span>
+          <span style="font-size:11px;color:var(--text3)">${canciones.length} canciones</span>
+        </div>
+        ${canciones.map(c => `
+          <div class="musician-song-row">
+            <span class="musician-num">${numGlobal++}</span>
+            <div style="flex:1">
+              <div class="musician-song-name">${c.nombre}</div>
+              <div class="musician-artist">${c.artista}</div>
+            </div>
+            ${signoBadge(c)}
+            ${badge(c.genero)}
+          </div>
+        `).join('')}
+      </div>`;
+    }).join('')}
+    <div style="text-align:center;font-size:11px;color:var(--text3);padding:16px;display:flex;align-items:center;justify-content:center;gap:5px">
+      <i class="ti ti-eye" style="font-size:13px"></i> Vista de solo lectura
+    </div>
+    <div style="text-align:center;margin-bottom:16px">
+      <button class="btn btn-secondary btn-sm" onclick="state.pagina='eventos';render()"><i class="ti ti-arrow-left"></i> Volver al admin</button>
+    </div>
+  </div>`;
+}
+
+// --- MODALS ---
+function buildModal() {
+  if (!state.modal) return '';
+  let content = '';
+  if (state.modal === 'add-song' || state.modal === 'edit-song') {
+    const d = state.modalData;
+    content = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">${state.modal === 'add-song' ? 'Agregar canción' : 'Editar canción'}</span>
+          <button class="btn-icon" id="modal-close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nombre de la canción</label>
+            <input class="input" id="modal-nombre" placeholder="Ej: La Bamba" value="${d.nombre||''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Artista</label>
+            <input class="input" id="modal-artista" placeholder="Ej: Ritchie Valens" value="${d.artista||''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Género</label>
+            <select class="input select" id="modal-genero">
+              ${GENEROS.map(g => `<option value="${g}" ${(d.genero||'Cumbia')===g?'selected':''}>${g}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="margin-bottom:8px">Signo (tono)</label>
+            <div class="nota-grid" id="nota-grid">
+              <button type="button" class="nota-btn ${!d.nota?'selected':''}" data-nota="">ND</button>
+              ${NOTAS.map(n => `<button type="button" class="nota-btn ${d.nota===n?'selected':''}" data-nota="${n}">${n}</button>`).join('')}
+            </div>
+            <div id="mod-section" style="${d.nota ? '' : 'opacity:0.3;pointer-events:none'}">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:500">Modificador</div>
+              <div class="mod-grid" id="mod-grid">
+                ${MODIFICADORES.map(m => {
+                  const isSel = (d.modificador||'') === m.val;
+                  const sym = m.sym ? m.sym : '&#9833;';
+                  return '<button type="button" class="mod-btn ' + (isSel ? 'selected' : '') + '" data-mod="' + m.val + '"><span class="mod-sym">' + sym + '</span>' + m.label + '</button>';
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="modal-save">${state.modal === 'add-song' ? 'Agregar' : 'Guardar'}</button>
+        </div>
+      </div>
+    </div>`;
+  } else if (state.modal === 'add-set') {
+    content = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Nuevo set</span>
+          <button class="btn-icon" id="modal-close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nombre del set</label>
+            <input class="input" id="modal-set-nombre" placeholder="Ej: Apertura bailable, Cierre romántico...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="modal-save-set">Crear set</button>
+        </div>
+      </div>
+    </div>`;
+  } else if (state.modal === 'rename-set') {
+    content = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Renombrar set</span>
+          <button class="btn-icon" id="modal-close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nuevo nombre</label>
+            <input class="input" id="modal-set-nombre" value="${state.modalData.nombre||''}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="modal-save-rename">Guardar</button>
+        </div>
+      </div>
+    </div>`;
+  } else if (state.modal === 'add-evento') {
+    content = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Nuevo evento</span>
+          <button class="btn-icon" id="modal-close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nombre del evento</label>
+            <input class="input" id="modal-ev-nombre" placeholder="Ej: Boda González, Quinceaños López...">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group">
+              <label class="form-label">Fecha</label>
+              <input class="input" type="date" id="modal-ev-fecha">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hora</label>
+              <input class="input" type="time" id="modal-ev-hora">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lugar</label>
+            <input class="input" id="modal-ev-lugar" placeholder="Ej: Salón Las Palmas, Puntarenas">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="modal-save-evento">Crear evento</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return content;
+}
+
+// Custom minimal SVG icons for bottom nav
+const NAV_ICONS = {
+  repertorio: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="18" height="18" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+    <line x1="7" y1="8" x2="17" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="7" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+  </svg>`,
+  canciones: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="3" y1="4.75" x2="14" y2="4.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="3" y1="8.25" x2="14" y2="8.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="3" y1="11.75" x2="9" y2="11.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+    <circle cx="17.5" cy="17.5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+    <polyline points="20,17.5 20,11 23,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>`,
+  sets: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3.5" width="18" height="4" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="3" y="10" width="18" height="4" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="3" y="16.5" width="18" height="4" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+  </svg>`,
+  eventos: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="8" y1="3" x2="8" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="16" y1="3" x2="16" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="8" cy="15.5" r="1.2" fill="currentColor"/>
+    <circle cx="12" cy="15.5" r="1.2" fill="currentColor"/>
+    <circle cx="16" cy="15.5" r="1.2" fill="currentColor"/>
+  </svg>`,
+};
+
+// --- MAIN BUILD ---
+function buildApp() {
+  // If not authenticated, only show repertorio
+  const isAdmin = state.autenticado;
+  let pageContent = '';
+  if (state.pagina === 'repertorio' || !isAdmin) pageContent = buildPageRepertorio();
+  else if (state.pagina === 'canciones') pageContent = buildPageCanciones();
+  else if (state.pagina === 'sets') pageContent = buildPageSets();
+  else if (state.pagina === 'eventos') pageContent = buildPageEventos();
+  else if (state.pagina === 'musicos') pageContent = buildPageMusicos(state.musicosEvento);
+
+  const adminNavItems = [
+    { id:'canciones', label:'Canciones' },
+    { id:'sets', label:'Sets' },
+    { id:'eventos', label:'Eventos' },
+  ];
+  const counts = { canciones: state.canciones.length, sets: state.sets.length, eventos: state.eventos.length };
+
+  // Admin layout (with sidebar + nav)
+  if (isAdmin && state.pagina !== 'repertorio') {
+    return `
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-name"><i class="ti ti-music"></i> Chivos</div>
+          <div class="sidebar-logo-sub">Gestión de repertorio</div>
+        </div>
+        <nav class="sidebar-nav">
+          ${adminNavItems.map(n => `<button class="nav-btn ${state.pagina === n.id ? 'active' : ''}" data-nav="${n.id}">${NAV_ICONS[n.id]} ${n.label}</button>`).join('')}
+          <button class="nav-btn" data-nav="repertorio" style="margin-top:auto;border-top:0.5px solid var(--border);margin-top:12px;padding-top:12px">${NAV_ICONS.repertorio} Repertorio</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="sidebar-stat"><b>${counts.canciones}</b> canciones</div>
+          <div class="sidebar-stat"><b>${counts.sets}</b> sets</div>
+          <button class="sidebar-stat" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:11px;padding:4px 12px;text-align:left" id="btn-logout">Cerrar sesión</button>
+        </div>
+      </aside>
+      <div style="display:flex;flex-direction:column;flex:1;min-width:0">
+        <main class="main">${pageContent}</main>
+        <nav class="bottom-nav">
+          ${adminNavItems.map(n => `<button class="nav-btn ${state.pagina === n.id ? 'active' : ''}" data-nav="${n.id}">${NAV_ICONS[n.id]}<span>${n.label}</span></button>`).join('')}
+          <button class="nav-btn" data-nav="repertorio">${NAV_ICONS.repertorio}<span>Inicio</span></button>
+        </nav>
+      </div>
+      ${buildModal()}
+    `;
+  }
+
+  // Public musician layout (full screen, no sidebar)
+  return `
+    <div style="display:flex;flex-direction:column;flex:1;min-width:0">
+      <main class="main" style="padding-bottom:0">${pageContent}</main>
+    </div>
+    ${buildPasswordOverlay()}
+    ${buildModal()}
+  `;
+}
+
+// --- EVENTS ---
+function printRepertorio(evId) {
+  const ev = state.eventos.find(e => e.id === evId);
+  if (!ev) return;
+
+  const GENRE_COLORS = {
+    Cumbia:    { bg: '#E1F5EE', color: '#085041', header: '#1D9E75' },
+    Merengue:  { bg: '#EEEDFE', color: '#26215C', header: '#534AB7' },
+    Corrido:   { bg: '#FAEEDA', color: '#412402', header: '#BA7517' },
+    Bolero:    { bg: '#FBEAF0', color: '#4B1528', header: '#993556' },
+    Pasodoble: { bg: '#E6F1FB', color: '#042C53', header: '#185FA5' },
+    Otro:      { bg: '#F1EFE8', color: '#2C2C2A', header: '#5F5E5A' },
+    Descanso:  { bg: '#FF4444', color: '#fff',    header: '#FF4444' },
+  };
+
+  // Build columns: each slot is a column section
+  const cols = (ev.slots || []).map(slot => {
+    if (slot.type === 'descanso') {
+      return { nombre: 'DESCANSO', canciones: [], isDescanso: true };
+    }
+    const s = setById(slot.id);
+    if (!s) return null;
+    return {
+      nombre: s.nombre,
+      genero: (() => {
+        const gs = s.canciones.map(id => (cancionById(id)||{}).genero).filter(Boolean);
+        const freq = {};
+        gs.forEach(g => freq[g] = (freq[g]||0)+1);
+        return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'Otro';
+      })(),
+      canciones: s.canciones.map(id => cancionById(id)).filter(Boolean),
+      isDescanso: false
+    };
+  }).filter(Boolean);
+
+  const maxRows = Math.max(...cols.filter(c => !c.isDescanso).map(c => c.canciones.length), 0);
+
+  const colHTML = cols.map(col => {
+    if (col.isDescanso) {
+      return `<td style="background:#E74C3C;color:white;font-weight:700;text-align:center;padding:6px 4px;font-size:11px;vertical-align:middle;width:80px">DESCANSO</td>`;
+    }
+    const gc = GENRE_COLORS[col.genero] || GENRE_COLORS.Otro;
+    const rows = col.canciones.map(c =>
+      `<tr><td style="padding:3px 8px;font-size:11px;border-bottom:1px solid ${gc.header}22;color:#222">${c.nombre}</td></tr>`
+    ).join('');
+    return `<td style="vertical-align:top;padding:0;min-width:120px">
+      <table style="width:100%;border-collapse:collapse">
+        <tr><th style="background:${gc.header};color:white;padding:5px 8px;font-size:11px;font-weight:700;text-align:center">${col.nombre}</th></tr>
+        ${rows}
+      </table>
+    </td>`;
+  }).join('<td style="width:6px"></td>');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Repertorio · ${ev.nombre}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; background: white; }
+    h2 { font-size: 14px; text-align: center; margin-bottom: 4px; }
+    p  { font-size: 11px; text-align: center; color: #666; margin-bottom: 12px; }
+    table { border-collapse: collapse; }
+    @media print { body { margin: 8px; } }
+  </style></head><body>
+  <h2>${ev.nombre}</h2>
+  <p>${[ev.fecha, ev.hora, ev.lugar].filter(Boolean).join(' · ')}</p>
+  <table><tr>${colHTML}</tr></table>
+  <script>window.onload=()=>window.print()<\/script>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+function attachAddToSetHandlers(container) {
+  container.querySelectorAll('[data-add-to-set]').forEach(el => {
+    el.addEventListener('click', () => {
+      const s = setById(parseInt(el.dataset.addToSet));
+      const songId = parseInt(el.dataset.songId);
+      if (s && songId && !s.canciones.includes(songId)) { s.canciones.push(songId); save(); render(); }
+    });
+  });
+}
+
+function attachEvents() {
+  // PWA install button
+  document.getElementById('btn-instalar-pwa')?.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') deferredInstallPrompt = null;
+  });
+  // Show if prompt already captured
+  if (deferredInstallPrompt) {
+    const btn = document.getElementById('btn-instalar-pwa');
+    if (btn) btn.style.display = 'flex';
+  }
+
+  // Acceso button (opens password)
+  document.getElementById('btn-acceso-admin')?.addEventListener('click', () => {
+    state.modal = 'password';
+    state.modalData = { pin: '' };
+    state.passwordError = false;
+    render();
+  });
+
+  // Password numpad
+  document.querySelectorAll('.pwd-key').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const pin = state.modalData.pin || '';
+      if (key === 'del') {
+        state.modalData.pin = pin.slice(0, -1);
+        state.passwordError = false;
+      } else if (pin.length < 4) {
+        const newPin = pin + key;
+        state.modalData.pin = newPin;
+        state.passwordError = false;
+        if (newPin.length === 4) {
+          if (newPin === '2334') {
+            state.autenticado = true;
+            state.modal = null;
+            state.pagina = 'canciones';
+            state.filtroGenero = 'Todos';
+            state.busqueda = '';
+            state.modalData = {};
+            render();
+            setTimeout(() => {
+              const main = document.querySelector('.main');
+              if (main) main.scrollTop = 0;
+            }, 50);
+            return;
+          } else {
+            state.passwordError = true;
+            setTimeout(() => { state.modalData.pin = ''; render(); }, 600);
+          }
+        }
+      }
+      render();
+    });
+  });
+
+  document.getElementById('pwd-cancel')?.addEventListener('click', () => {
+    state.modal = null;
+    state.modalData = {};
+    state.passwordError = false;
+    render();
+  });
+
+  // Logout
+  document.getElementById('btn-logout')?.addEventListener('click', () => {
+    state.autenticado = false;
+    state.pagina = 'repertorio';
+    render();
+  });
+
+  // Navigation
+  document.querySelectorAll('[data-nav]').forEach(btn => {
+    btn.addEventListener('click', () => { state.pagina = btn.dataset.nav; render(); });
+  });
+
+  // Modal close
+  const mo = document.getElementById('modal-overlay');
+  if (mo) {
+    document.getElementById('modal-close')?.addEventListener('click', () => { state.modal = null; render(); });
+    document.getElementById('modal-cancel')?.addEventListener('click', () => { state.modal = null; render(); });
+    mo.addEventListener('click', (e) => { if (e.target === mo) { state.modal = null; render(); } });
+  }
+
+  // CANCIONES
+  document.getElementById('btn-add-song')?.addEventListener('click', () => { state.modal = 'add-song'; state.modalData = {}; render(); });
+
+  document.getElementById('busqueda-input')?.addEventListener('input', e => {
+    state.busqueda = e.target.value;
+    render();
+  });
+
+  document.querySelectorAll('[data-filtro]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.filtroGenero = btn.dataset.filtro;
+      state.busqueda = '';
+      render();
+    });
+  });
+
+  // Nota picker
+  document.querySelectorAll('#nota-grid .nota-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#nota-grid .nota-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      const modSection = document.getElementById('mod-section');
+      if (modSection) {
+        const hasNota = btn.dataset.nota !== '';
+        modSection.style.opacity = hasNota ? '1' : '0.3';
+        modSection.style.pointerEvents = hasNota ? 'auto' : 'none';
+        if (!hasNota) {
+          document.querySelectorAll('#mod-grid .mod-btn').forEach(b => b.classList.remove('selected'));
+          const mayor = document.querySelector('#mod-grid .mod-btn[data-mod=""]');
+          if (mayor) mayor.classList.add('selected');
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('#mod-grid .mod-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#mod-grid .mod-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+
+  document.querySelectorAll('.btn-edit-song').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = cancionById(parseInt(btn.dataset.id));
+      if (c) { state.modal = 'edit-song'; state.modalData = {...c}; render(); }
+    });
+  });
+
+  document.querySelectorAll('.btn-del-song').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm('¿Eliminar esta canción?')) {
+        const id = parseInt(btn.dataset.id);
+        state.canciones = state.canciones.filter(c => c.id !== id);
+        state.sets.forEach(s => { s.canciones = s.canciones.filter(cid => cid !== id); });
+        save(); render(); toast('Canción eliminada');
+      }
+    });
+  });
+
+  document.getElementById('modal-save')?.addEventListener('click', () => {
+    const nombre = document.getElementById('modal-nombre')?.value.trim();
+    const artista = document.getElementById('modal-artista')?.value.trim();
+    const genero = document.getElementById('modal-genero')?.value;
+    const nota = document.querySelector('#nota-grid .nota-btn.selected')?.dataset.nota || '';
+    const modificador = document.querySelector('#mod-grid .mod-btn.selected')?.dataset.mod || '';
+    if (!nombre) { alert('Ingresa el nombre de la canción'); return; }
+    if (state.modal === 'add-song') {
+      state.canciones.push({ id: ++state.nextId, nombre, artista: artista||'', genero, nota, modificador });
+      toast('Canción agregada');
+    } else {
+      const c = cancionById(state.modalData.id);
+      if (c) { c.nombre = nombre; c.artista = artista; c.genero = genero; c.nota = nota; c.modificador = modificador; }
+      toast('Canción actualizada');
+    }
+    state.modal = null; save(); render();
+  });
+
+  // SETS
+  document.getElementById('btn-add-set')?.addEventListener('click', () => { state.modal = 'add-set'; state.modalData = {}; render(); });
+
+  document.querySelectorAll('[data-set-select]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-del-set')) return;
+      state.setSeleccionado = parseInt(el.dataset.setSelect);
+      render();
+    });
+  });
+
+  document.querySelectorAll('.btn-del-set').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm('¿Eliminar este set? Se quitará de los eventos que lo usen.')) {
+        const id = parseInt(btn.dataset.id);
+        state.sets = state.sets.filter(s => s.id !== id);
+        state.eventos.forEach(ev => { ev.slots = (ev.slots||[]).filter(sl => !(sl.type==='set' && sl.id===id)); });
+        if (state.setSeleccionado === id) state.setSeleccionado = null;
+        save(); render(); toast('Set eliminado');
+      }
+    });
+  });
+
+  document.getElementById('modal-save-set')?.addEventListener('click', () => {
+    const nombre = document.getElementById('modal-set-nombre')?.value.trim();
+    if (!nombre) { alert('Ingresa un nombre'); return; }
+    const newSet = { id: ++state.nextId, nombre, canciones: [] };
+    state.sets.push(newSet);
+    state.setSeleccionado = newSet.id;
+    state.modal = null; save(); render(); toast('Set creado');
+  });
+
+  document.getElementById('btn-rename-set')?.addEventListener('click', () => {
+    const s = setById(parseInt(document.getElementById('btn-rename-set').dataset.id));
+    if (s) { state.modal = 'rename-set'; state.modalData = {...s}; render(); }
+  });
+
+  document.getElementById('modal-save-rename')?.addEventListener('click', () => {
+    const nombre = document.getElementById('modal-set-nombre')?.value.trim();
+    if (!nombre) return;
+    const s = setById(state.modalData.id);
+    if (s) { s.nombre = nombre; }
+    state.modal = null; save(); render(); toast('Set renombrado');
+  });
+
+  document.querySelectorAll('.btn-remove-from-set').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = setById(parseInt(btn.dataset.set));
+      if (s) { s.canciones = s.canciones.filter(id => id !== parseInt(btn.dataset.song)); save(); render(); }
+    });
+  });
+
+  // Add to set from search
+  document.querySelectorAll('[data-add-to-set]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const setId = parseInt(el.dataset.addToSet || el.closest('[data-add-to-set]')?.dataset.addToSet);
+      const songId = parseInt(el.dataset.songId || el.closest('[data-add-to-set]')?.dataset.songId);
+      const s = setById(setId);
+      if (s && songId && !s.canciones.includes(songId)) {
+        s.canciones.push(songId); save(); render(); toast('Canción agregada al set');
+      }
+    });
+  });
+
+  // Set search filter
+  // Genre filter pills in set editor
+  document.querySelectorAll('.set-genre-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.setGeneroFiltro = btn.dataset.genre;
+      // Re-render results without full page render
+      const sel = state.setSeleccionado ? setById(state.setSeleccionado) : null;
+      if (!sel) { render(); return; }
+      const q = (document.getElementById('set-search')?.value || '').toLowerCase();
+      const g = state.setGeneroFiltro;
+      const disponibles = state.canciones.filter(c =>
+        !sel.canciones.includes(c.id) &&
+        (g === 'Todos' || c.genero === g) &&
+        (!q || c.nombre.toLowerCase().includes(q) || c.artista.toLowerCase().includes(q))
+      );
+      const container = document.getElementById('set-search-results');
+      if (container) {
+        container.innerHTML = disponibles.slice(0, 10).map(c => `
+          <div class="song-row-editor" style="padding:8px 4px;cursor:pointer" data-add-to-set="${sel.id}" data-song-id="${c.id}">
+            <div class="song-info"><div class="song-name">${c.nombre}</div><div class="song-artist">${c.artista}</div></div>
+            ${badge(c.genero)}
+            <button class="btn btn-secondary btn-sm" data-add-to-set="${sel.id}" data-song-id="${c.id}"><i class="ti ti-plus"></i></button>
+          </div>
+        `).join('');
+        attachAddToSetHandlers(container);
+      }
+      // Update pill active states
+      document.querySelectorAll('.set-genre-pill').forEach(p => {
+        const isActive = p.dataset.genre === state.setGeneroFiltro;
+        const g2 = p.dataset.genre;
+        const activeColors = { Cumbia:'background:#0f5c3a;color:#9FE1CB;border-color:#1D9E75', Merengue:'background:#2d2870;color:#CECBF6;border-color:#7F77DD', Corrido:'background:#5a3a0a;color:#FAEEDA;border-color:#EF9F27', Bolero:'background:#5c1a35;color:#F4C0D1;border-color:#D4537E', Pasodoble:'background:#0c3560;color:#E6F1FB;border-color:#378ADD', Otro:'background:#333;color:#eee;border-color:#666', Todos:'background:#7F77DD;color:#fff;border-color:#7F77DD' };
+        const inactiveColors = { Cumbia:'background:#062b1e;color:#5DCAA5;border-color:#0f5c3a', Merengue:'background:#16143a;color:#7F77DD;border-color:#2d2870', Corrido:'background:#291a05;color:#EF9F27;border-color:#5a3a0a', Bolero:'background:#2a0a18;color:#ED93B1;border-color:#5c1a35', Pasodoble:'background:#061828;color:#85B7EB;border-color:#0c3560', Otro:'background:#1a1a1a;color:#888;border-color:#333', Todos:'background:var(--surface2);color:var(--text3);border-color:var(--border2)' };
+        const styleStr = (isActive ? activeColors[g2] : inactiveColors[g2]) || '';
+        styleStr.split(';').forEach(rule => {
+          const [prop, val] = rule.split(':');
+          if (prop && val) p.style[prop.trim().replace(/-([a-z])/g, (_,l)=>l.toUpperCase())] = val.trim();
+        });
+      });
+    });
+  });
+
+  document.getElementById('set-search')?.addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    const g = state.setGeneroFiltro || 'Todos';
+    const sel = state.setSeleccionado ? setById(state.setSeleccionado) : null;
+    const container = document.getElementById('set-search-results');
+    if (!container || !sel) return;
+    const disponibles = state.canciones.filter(c =>
+      !sel.canciones.includes(c.id) &&
+      (g === 'Todos' || c.genero === g) &&
+      (!q || c.nombre.toLowerCase().includes(q) || c.artista.toLowerCase().includes(q))
+    );
+    container.innerHTML = disponibles.slice(0, 10).map(c => `
+      <div class="song-row-editor" style="padding:8px 4px;cursor:pointer" data-add-to-set="${sel.id}" data-song-id="${c.id}">
+        <div class="song-info"><div class="song-name">${c.nombre}</div><div class="song-artist">${c.artista}</div></div>
+        ${badge(c.genero)}
+        <button class="btn btn-secondary btn-sm" data-add-to-set="${sel.id}" data-song-id="${c.id}"><i class="ti ti-plus"></i></button>
+      </div>
+    `).join('');
+    attachAddToSetHandlers(container);
+  });
+
+  // EVENTOS
+  document.getElementById('btn-add-evento')?.addEventListener('click', () => { state.modal = 'add-evento'; state.modalData = {}; render(); });
+
+  // Publicar/despublicar evento
+  document.querySelectorAll('.btn-publicar-evento').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      const ev = state.eventos.find(e => e.id === id);
+      if (!ev) return;
+      const yaPublicado = ev.publicado === true;
+      // Unpublish all, then publish selected if it wasn't already
+      state.eventos.forEach(e => { e.publicado = false; });
+      if (!yaPublicado) ev.publicado = true;
+      await saveEventos();
+      render();
+      toast(yaPublicado ? 'Repertorio despublicado' : '¡Publicado! Ya visible para todos los músicos');
+    });
+  });
+
+  document.querySelectorAll('[data-ev-select]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-del-evento') || e.target.closest('.btn-publicar-evento')) return;
+      state.eventoSeleccionado = parseInt(el.dataset.evSelect);
+      render();
+    });
+  });
+
+  document.querySelectorAll('.btn-del-evento').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm('¿Eliminar este evento?')) {
+        state.eventos = state.eventos.filter(ev => ev.id !== parseInt(btn.dataset.id));
+        if (state.eventoSeleccionado === parseInt(btn.dataset.id)) state.eventoSeleccionado = null;
+        save(); render(); toast('Evento eliminado');
+      }
+    });
+  });
+
+  document.getElementById('modal-save-evento')?.addEventListener('click', () => {
+    const nombre = document.getElementById('modal-ev-nombre')?.value.trim();
+    if (!nombre) { alert('Ingresa el nombre del evento'); return; }
+    const fecha = document.getElementById('modal-ev-fecha')?.value;
+    const hora = document.getElementById('modal-ev-hora')?.value;
+    const lugar = document.getElementById('modal-ev-lugar')?.value.trim();
+    const horaDisplay = hora ? hora.replace(/^(\d{2}):(\d{2})$/, (_, h, m) => {
+      const hNum = parseInt(h); const ampm = hNum >= 12 ? 'pm' : 'am';
+      return ((hNum % 12) || 12) + ':' + m + ampm;
+    }) : '';
+    const newEv = { id: ++state.nextId, nombre, fecha, hora: horaDisplay, lugar, slots: [] };
+    state.eventos.push(newEv);
+    state.eventoSeleccionado = newEv.id;
+    state.modal = null; save(); render(); toast('Evento creado');
+  });
+
+  document.querySelectorAll('.btn-add-set-to-ev').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ev = state.eventos.find(e => e.id === parseInt(btn.dataset.ev));
+      const setId = parseInt(btn.dataset.set);
+      if (ev && !(ev.slots||[]).some(sl=>sl.type==='set'&&sl.id===setId)) { ev.slots = [...(ev.slots||[]), {type:'set',id:setId}]; state.modalData = {}; save(); render(); toast('Set agregado'); }
+    });
+  });
+
+  // Agregar descanso entre sets
+  document.querySelectorAll('.btn-descanso-entre').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ev = state.eventos.find(e => e.id === parseInt(btn.dataset.ev));
+      const afterIdx = parseInt(btn.dataset.after);
+      if (!ev) return;
+      ev.slots.splice(afterIdx + 1, 0, { type: 'descanso' });
+      save(); render(); toast('Descanso agregado');
+    });
+  });
+
+  // Agregar set al final (toggle picker)
+  document.querySelectorAll('.btn-agregar-set-final').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const evId = parseInt(btn.dataset.ev);
+      if (state.modalData && state.modalData.showSetPicker === evId) {
+        state.modalData = {};
+      } else {
+        state.modalData = { showSetPicker: evId };
+      }
+      render();
+    });
+  });
+
+  document.querySelectorAll('.btn-remove-set-from-ev').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ev = state.eventos.find(e => e.id === parseInt(btn.dataset.ev));
+      if (ev) { const rmIdx = parseInt(btn.dataset.setIdx); ev.slots.splice(rmIdx, 1); save(); render(); }
+    });
+  });
+
+  document.getElementById('btn-print-repertorio')?.addEventListener('click', (e) => {
+    printRepertorio(parseInt(e.currentTarget.dataset.ev));
+  });
+
+  document.getElementById('btn-ver-musicos')?.addEventListener('click', (e) => {
+    state.musicosEvento = parseInt(e.currentTarget.dataset.ev);
+    state.pagina = 'musicos';
+    render();
+  });
+
+  document.getElementById('btn-copy-link')?.addEventListener('click', () => {
+    const url = window.location.href + '#evento-' + (document.getElementById('btn-copy-link')?.dataset.ev || '');
+    navigator.clipboard.writeText(url).then(() => toast('Link copiado al portapapeles'));
+  });
+}
+
+// Init — inject demo data if first run
+// Arranca cargando desde Supabase
+state.cargando = true;
+render();
+loadFromDB();
+
+// PWA Install prompt
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('btn-instalar-pwa');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('btn-instalar-pwa');
+  if (btn) btn.style.display = 'none';
+});
+
+// Registrar Service Worker para PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW registrado'))
+      .catch(e => console.log('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>
