@@ -545,15 +545,18 @@ async function loadFromDB() {
   iniciarRealtime();
 }
 
+let realtimeConectado = false;
+let pollingInterval = null;
+
 function iniciarRealtime() {
-  // Escucha cambios en la tabla eventos en tiempo real
-  db.channel('eventos-publicos')
+  // Canal Realtime para eventos
+  const canal = db.channel('chivos-eventos-' + Math.random().toString(36).slice(2))
     .on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'eventos'
     }, (payload) => {
-      // Actualizar solo el evento que cambió
+      console.log('Realtime evento:', payload.eventType);
       if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
         const updated = payload.new;
         const parsed = {
@@ -564,17 +567,55 @@ function iniciarRealtime() {
         const idx = state.eventos.findIndex(e => e.id === parsed.id);
         if (idx >= 0) state.eventos[idx] = parsed;
         else state.eventos.push(parsed);
-        // Si estamos en la pantalla pública, refrescar
-        if (state.pagina === 'repertorio' || !state.autenticado) render();
+        render();
       }
       if (payload.eventType === 'DELETE') {
         state.eventos = state.eventos.filter(e => e.id !== payload.old.id);
-        if (state.pagina === 'repertorio' || !state.autenticado) render();
+        render();
       }
     })
     .subscribe((status) => {
       console.log('Realtime status:', status);
+      if (status === 'SUBSCRIBED') {
+        realtimeConectado = true;
+        // Si el Realtime funciona, no necesitamos polling
+        if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+      }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        realtimeConectado = false;
+        iniciarPolling();
+      }
     });
+
+  // Timeout: si en 4 segundos no conecta Realtime, usar polling
+  setTimeout(() => {
+    if (!realtimeConectado) {
+      console.log('Realtime no disponible, usando polling');
+      iniciarPolling();
+    }
+  }, 4000);
+}
+
+async function iniciarPolling() {
+  if (pollingInterval) return; // ya está corriendo
+  console.log('Polling activo cada 5s');
+  pollingInterval = setInterval(async () => {
+    try {
+      const { data: eRows } = await db.from('eventos').select('*').order('id');
+      if (!eRows) return;
+      const nuevos = eRows.map(e => ({
+        ...e,
+        slots: typeof e.slots === 'string' ? JSON.parse(e.slots) : (e.slots||[]),
+        publicado: e.publicado === true
+      }));
+      // Ver si cambió algo
+      const cambio = JSON.stringify(nuevos) !== JSON.stringify(state.eventos);
+      if (cambio) {
+        state.eventos = nuevos;
+        render();
+      }
+    } catch(e) { console.error('Polling error:', e); }
+  }, 5000);
 }
 
 function toast(msg) {
