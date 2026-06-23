@@ -488,10 +488,6 @@ let state = {
   passwordError: false,
 };
 
-// ── Supabase ──────────────────────────────────────────────
-const SUPA_URL = 'https://jioeydtpmckbrwgnyvcr.supabase.co';
-const SUPA_KEY = 'sb_publishable_6frCBaZ2TMCp2zSPJTM8Zw_1g4DkemE';
-
 // ── Supabase cliente con Realtime ─────────────────────────
 const SUPA_URL = 'https://jioeydtpmckbrwgnyvcr.supabase.co';
 const SUPA_KEY = 'sb_publishable_6frCBaZ2TMCp2zSPJTM8Zw_1g4DkemE';
@@ -1392,6 +1388,7 @@ function printRepertorio(evId) {
     </td>`;
   }).join('<td style="width:6px"></td>');
 
+  const scriptTag = '<scr' + 'ipt>window.onload=()=>window.print()</' + 'script>';
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>Repertorio · ${ev.nombre}</title>
   <style>
@@ -1404,7 +1401,7 @@ function printRepertorio(evId) {
   <h2>${ev.nombre}</h2>
   <p>${[ev.fecha, ev.hora, ev.lugar].filter(Boolean).join(' · ')}</p>
   <table><tr>${colHTML}</tr></table>
-  <script>window.onload=()=>window.print()<\/script>
+  ` + scriptTag + `
   </body></html>`;
 
   const w = window.open('', '_blank');
